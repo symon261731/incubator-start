@@ -10,8 +10,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.videos = void 0;
+exports.updateVideo = updateVideo;
 exports.addVideo = addVideo;
 exports.videos = {};
+function updateVideo(id, video) {
+    return __awaiter(this, void 0, void 0, function* () {
+        exports.videos[id] = video;
+    });
+}
 function addVideo(id, video) {
     return __awaiter(this, void 0, void 0, function* () {
         exports.videos[id] = video;

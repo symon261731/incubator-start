@@ -1,11 +1,16 @@
 import { Router } from "express";
-import { videos, addVideo } from "../db";
-import { Video, VideoInfoDTO, validateVideoDTO } from "../drivers/videos";
+import { videos, addVideo, updateVideo } from "../db";
+import {
+  Video,
+  VideoInfoDTO,
+  validateVideoDTO,
+  validateVideoUpdateDTO,
+} from "../drivers/videos";
 
 const videosRouter = Router();
 
 videosRouter
-  .get("", (req, res) => {
+  .get("", (_, res) => {
     const allVideos = Object.entries(videos).reduce<Video[]>(
       (acc, [key, data]) => {
         acc.push({ id: key, ...data });
@@ -37,35 +42,43 @@ videosRouter
       res.status(500);
     }
   })
-  .post("/:id", async (req, res) => {
+  .post("", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
       const body = req.body;
 
-      const validationResult = validateVideoDTO(body)
+      const validationResult = validateVideoDTO(body);
 
       if (!!validationResult.length) {
-        res.status(400).json(validationResult)
-      }
-
-
-      if (videos[id]) {
-        res.status(409);
-
+        res.status(400).json(validationResult);
         return;
       }
 
       const createdAt = new Date().toISOString();
 
+      const {
+        title,
+        author,
+        availableResolutions,
+        canBeDownloaded,
+        minAgeRestriction,
+        publicationDate,
+      } = body;
+
       const video: VideoInfoDTO = {
-        author: body
+        author,
         createdAt,
+        title,
+        availableResolutions,
+        canBeDownloaded: canBeDownloaded ?? false,
+        minAgeRestriction,
+        publicationDate,
       };
 
-      addVideo(id, video).then(() => {
-        res.status(200);
-        return;
-      });
+      await addVideo(crypto.randomUUID(), video);
+
+      console.log("video created", video);
+      res.status(201).json(video);
+      return;
     } catch (e) {
       console.error(e);
       res.status(500);
@@ -74,12 +87,32 @@ videosRouter
   .put("/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const body = req.body;
+
+      const validationResult = validateVideoUpdateDTO(body);
+
+      if (!!validationResult.length) {
+        res.status(400).json(validationResult);
+        return;
+      }
+
       const videoInfo = videos[id];
 
       if (!videoInfo) {
         res.status(404);
         return;
       }
+
+      const updatedVideo: VideoInfoDTO = {
+        ...videoInfo,
+        ...body,
+      };
+
+      updateVideo(id, updatedVideo).then(() => {
+        res.status(204);
+      });
+
+      console.log("video updated", updatedVideo);
     } catch (e) {
       console.error(e);
       res.status(500);
@@ -92,10 +125,12 @@ videosRouter
 
       if (video) {
         delete videos[id];
-        res.status(200);
+        res.status(204);
 
         return;
       }
+
+      console.log("video deleted", id);
 
       res.status(404);
     } catch (e) {
