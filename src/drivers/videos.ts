@@ -1,3 +1,5 @@
+import { ErrorInformation } from "../core/types";
+
 export enum availableResolutionsEnum {
   "P144",
   "P240",
@@ -14,34 +16,24 @@ export interface VideoInfoDTO {
   author: string;
   availableResolutions: availableResolutionsEnum[];
   createdAt: string;
-  minAgeRestriction?: number;
+  minAgeRestriction: number | null;
   publicationDate?: string;
   canBeDownloaded: boolean;
 }
 
 export interface Video extends VideoInfoDTO {
-  id: string | number;
+  id: number;
 }
 
-export function validateVideoDTO(data: Record<string, any>) {
-  const errors: { message: string; field: string }[] = [];
+export function validateAddVideoData(data: VideoInfoDTO) {
+  const errors: ErrorInformation[] = [];
   const { title, author, availableResolutions, minAgeRestriction } = data;
 
-  if (
-    !title ||
-    typeof title !== "string" ||
-    title.trim().length < 2 ||
-    title.trim().length > 15
-  ) {
+  if (!title || typeof title !== "string" || title.trim().length >= 40) {
     errors.push({ field: "title", message: "Invalid name" });
   }
 
-  if (
-    !author ||
-    typeof author !== "string" ||
-    author.trim().length < 2 ||
-    author.trim().length > 15
-  ) {
+  if (!author || typeof author !== "string" || author.trim().length >= 20) {
     errors.push({ field: "author", message: "Invalid name" });
   }
 
@@ -61,16 +53,6 @@ export function validateVideoDTO(data: Record<string, any>) {
     errors.push({
       message: "availableResolutions not includes",
       field: "availableResolutions",
-    });
-  }
-
-  if (
-    data.hasOwnProperty("minAgeRestriction") &&
-    Number(data.minAgeRestriction) < 0
-  ) {
-    errors.push({
-      message: "minAgeRestriction must be greater than 0",
-      field: "minAgeRestriction",
     });
   }
 
@@ -78,24 +60,14 @@ export function validateVideoDTO(data: Record<string, any>) {
 }
 
 export function validateVideoUpdateDTO(data: VideoInfoDTO) {
-  const errors: { message: string; field: string }[] = [];
-  const { title, author, availableResolutions } = data;
+  const errors: ErrorInformation[] = [];
+  const { title, author, availableResolutions, minAgeRestriction } = data;
 
-  if (
-    !title ||
-    typeof title !== "string" ||
-    title.trim().length < 2 ||
-    title.trim().length > 15
-  ) {
+  if (!title || typeof title !== "string" || title.trim().length >= 40) {
     errors.push({ field: "title", message: "Invalid name" });
   }
 
-  if (
-    !author ||
-    typeof author !== "string" ||
-    author.trim().length < 2 ||
-    author.trim().length > 15
-  ) {
+  if (!author || typeof author !== "string" || author.trim().length >= 20) {
     errors.push({ field: "author", message: "Invalid name" });
   }
 
@@ -119,12 +91,26 @@ export function validateVideoUpdateDTO(data: VideoInfoDTO) {
   }
 
   if (
-    data.hasOwnProperty("minAgeRestriction") &&
-    Number(data.minAgeRestriction) < 0
+    minAgeRestriction &&
+    (Number(minAgeRestriction) <= 0 || Number(minAgeRestriction) > 18)
   ) {
     errors.push({
-      message: "minAgeRestriction must be greater than 0",
+      message: "minAgeRestriction must be between 1 and 18",
       field: "minAgeRestriction",
+    });
+  }
+
+  if (!data.publicationDate || isNaN(Date.parse(data.publicationDate))) {
+    errors.push({
+      message: "publicationDate must be a valid date",
+      field: "publicationDate",
+    });
+  }
+
+  if (!data.createdAt || isNaN(Date.parse(data.createdAt))) {
+    errors.push({
+      message: "createdAt must be a valid date",
+      field: "createdAt",
     });
   }
 
